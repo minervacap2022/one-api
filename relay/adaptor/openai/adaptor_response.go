@@ -18,6 +18,7 @@ import (
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/helper"
 	"github.com/songquanpeng/one-api/relay/adaptor"
+	"github.com/songquanpeng/one-api/relay/adaptor/alibailian"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai_compatible"
 	"github.com/songquanpeng/one-api/relay/channeltype"
 	"github.com/songquanpeng/one-api/relay/meta"
@@ -160,7 +161,13 @@ func (a *Adaptor) DoResponse(c *gin.Context,
 		switch meta.Mode {
 		case relaymode.ImagesGenerations,
 			relaymode.ImagesEdits:
-			err, usage = ImageHandler(c, resp)
+			// AliBailian image generation returns DashScope native format
+			if meta.ChannelType == channeltype.AliBailian &&
+				alibailian.IsQwenImageModel(meta.ActualModelName) {
+				err, usage = alibailian.ImageHandler(c, resp, meta)
+			} else {
+				err, usage = ImageHandler(c, resp)
+			}
 		case relaymode.ResponseAPI:
 			err, usage = ResponseAPIDirectHandler(c, resp, meta.PromptTokens, meta.ActualModelName)
 		case relaymode.Videos:

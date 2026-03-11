@@ -193,6 +193,12 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *me
 		req.Header.Set("HTTP-Referer", "https://github.com/Laisky/one-api")
 		req.Header.Set("X-Title", "One API")
 	}
+	// AliBailian: set async header for legacy image models (qwen-image-plus, qwen-image)
+	if meta.ChannelType == channeltype.AliBailian &&
+		meta.Mode == relaymode.ImagesGenerations &&
+		!alibailian.IsQwenImageSyncModel(meta.ActualModelName) {
+		req.Header.Set("X-DashScope-Async", "enable")
+	}
 	return nil
 }
 
@@ -418,6 +424,12 @@ func (a *Adaptor) ConvertImageRequest(_ *gin.Context, request *model.ImageReques
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
+
+	// AliBailian uses DashScope native format for image generation
+	if a.ChannelType == channeltype.AliBailian && alibailian.IsQwenImageModel(request.Model) {
+		return alibailian.ConvertImageRequest(*request), nil
+	}
+
 	return request, nil
 }
 
